@@ -1,0 +1,166 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:SmartNavigationMAD.Models"
+             x:Class="SmartNavigationMAD.MainPage"
+             Title="Loca"
+             BackgroundColor="{StaticResource BackgroundColor}">
+
+    <RefreshView x:Name="PageRefreshView"
+                 Refreshing="OnRefreshRequested">
+
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*"
+              Padding="20">
+
+            <!-- Header -->
+            <Label Grid.Row="0"
+                   Text="Current Trip Status"
+                   FontSize="16"
+                   FontAttributes="Bold"
+                   TextColor="{StaticResource SecondaryText}"
+                   HorizontalOptions="Center"/>
+
+            <!-- Status Card -->
+            <Border Grid.Row="1"
+                    Margin="0,15"
+                    Padding="20"
+                    Background="{StaticResource CardColor}"
+                    StrokeShape="RoundRectangle 16">
+
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                      ColumnDefinitions="Auto,*"
+                      RowSpacing="12"
+                      ColumnSpacing="16">
+
+                    <Label Text="📍 Latitude"/>
+                    <Label x:Name="LatitudeLabel" Grid.Column="1"/>
+
+                    <Label Text="🧭 Longitude" Grid.Row="1"/>
+                    <Label x:Name="LongitudeLabel"
+                           Grid.Row="1"
+                           Grid.Column="1"/>
+
+                    <Label Text="🌐 Network" Grid.Row="2"/>
+                    <Label x:Name="NetworkLabel"
+                           Grid.Row="2"
+                           Grid.Column="1"/>
+
+                    <Label Text="⏱️ Updated" Grid.Row="3"/>
+                    <Label x:Name="TimeLabel"
+                           Grid.Row="3"
+                           Grid.Column="1"/>
+
+                </Grid>
+            </Border>
+
+            <!-- Status Message -->
+            <Label x:Name="StatusLabel"
+                   Grid.Row="2"
+                   HorizontalOptions="Center"
+                   FontAttributes="Bold"
+                   TextColor="{StaticResource SuccessColor}"/>
+
+            <!-- Trip ID Section -->
+            <Border Grid.Row="3"
+                    Margin="0,15"
+                    Padding="20"
+                    Background="{StaticResource CardColor}"
+                    StrokeShape="RoundRectangle 16">
+
+                <VerticalStackLayout Spacing="8">
+
+                    <Label Text="Trip ID"
+                           FontAttributes="Bold">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="ToggleTripIdHelp"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+
+                    <Label x:Name="TripIdHelp"
+                           Text="A Trip ID is a short identifier you assign to a location checkpoint."
+                           FontSize="12"
+                           TextColor="{StaticResource SecondaryText}"
+                           IsVisible="False"
+                           Opacity="0"/>
+
+                    <Entry x:Name="TripEntry"
+                           Placeholder="e.g. NAV123"/>
+
+                    <Label x:Name="TripErrorLabel"
+                           TextColor="{StaticResource ErrorColor}"
+                           FontSize="12"
+                           IsVisible="False"/>
+
+                    <!-- Save button with press animation -->
+                    <Button Text="Save Trip"
+                            BackgroundColor="{StaticResource PrimaryColor}"
+                            TextColor="White"
+                            CornerRadius="12"
+                            Pressed="SaveButton_Pressed"
+                            Released="SaveButton_Released"
+                            Clicked="SaveTrip_Clicked"/>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Saved Trips Header -->
+            <VerticalStackLayout Grid.Row="4"
+                                 Spacing="6">
+
+                <Label Text="Saved Trips"
+                       FontSize="18"
+                       FontAttributes="Bold">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="ToggleSavedTripsHelp"/>
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <Label x:Name="SavedTripsHelp"
+                       Text="All saved trip checkpoints are stored locally and available offline."
+                       FontSize="12"
+                       TextColor="{StaticResource SecondaryText}"
+                       IsVisible="False"
+                       Opacity="0"/>
+            </VerticalStackLayout>
+
+            <!-- Trips List -->
+            <CollectionView x:Name="TripsView"
+                            Grid.Row="5">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:TripLog">
+                        <Border Padding="15"
+                                Margin="0,5"
+                                Background="{StaticResource CardColor}"
+                                StrokeShape="RoundRectangle 14"
+                                TranslationY="12"
+                                Loaded="TripItem_Loaded">
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout>
+                                    <Label Text="{Binding TripId}"
+                                           FontAttributes="Bold"/>
+                                    <Label Text="{Binding Location}"
+                                           FontSize="12"
+                                           TextColor="{StaticResource SecondaryText}"/>
+                                </VerticalStackLayout>
+
+                                <!-- Delete button (22x22) -->
+                                <ImageButton Source="delete.png"
+                                             Grid.Column="1"
+                                             WidthRequest="22"
+                                             HeightRequest="22"
+                                             Padding="4"
+                                             BackgroundColor="Transparent"
+                                             CommandParameter="{Binding .}"
+                                             Pressed="DeleteButton_Pressed"
+                                             Released="DeleteButton_Released"
+                                             Clicked="DeleteTrip_Clicked"/>
+                            </Grid>
+
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </Grid>
+    </RefreshView>
+</ContentPage>

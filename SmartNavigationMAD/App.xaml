@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SmartNavigationMAD.App">
+
+    <Application.Resources>
+
+        <!-- Slate + Coral Palette -->
+        <Color x:Key="PrimaryColor">#37474F</Color>
+        <!-- Slate -->
+        <Color x:Key="AccentColor">#FF6F61</Color>
+        <!-- Coral -->
+        <Color x:Key="SuccessColor">#26A69A</Color>
+        <!-- Muted Teal -->
+        <Color x:Key="BackgroundColor">#ECEFF1</Color>
+        <!-- Warm Gray -->
+        <Color x:Key="CardColor">#FFFFFF</Color>
+        <!-- White -->
+        <Color x:Key="PrimaryText">#263238</Color>
+        <!-- Almost Black -->
+        <Color x:Key="SecondaryText">#546E7A</Color>
+        <!-- Blue-Gray -->
+        <Color x:Key="ErrorColor">#C62828</Color>
+        <!-- Deep Red -->
+
+    </Application.Resources>
+</Application>
