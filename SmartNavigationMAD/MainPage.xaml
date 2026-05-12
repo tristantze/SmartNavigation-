@@ -32,20 +32,20 @@
                       RowSpacing="12"
                       ColumnSpacing="16">
 
-                    <Label Text="📍 Latitude"/>
+                    <Label Text="Latitude"/>
                     <Label x:Name="LatitudeLabel" Grid.Column="1"/>
 
-                    <Label Text="🧭 Longitude" Grid.Row="1"/>
+                    <Label Text="Longitude" Grid.Row="1"/>
                     <Label x:Name="LongitudeLabel"
                            Grid.Row="1"
                            Grid.Column="1"/>
 
-                    <Label Text="🌐 Network" Grid.Row="2"/>
+                    <Label Text="Network" Grid.Row="2"/>
                     <Label x:Name="NetworkLabel"
                            Grid.Row="2"
                            Grid.Column="1"/>
 
-                    <Label Text="⏱️ Updated" Grid.Row="3"/>
+                    <Label Text="Updated" Grid.Row="3"/>
                     <Label x:Name="TimeLabel"
                            Grid.Row="3"
                            Grid.Column="1"/>
@@ -84,7 +84,10 @@
                            Opacity="0"/>
 
                     <Entry x:Name="TripEntry"
-                           Placeholder="e.g. NAV123"/>
+                           Placeholder="e.g. NAV123"
+                           MaxLength="20"
+                           ClearButtonVisibility="WhileEditing"
+                           ReturnType="Done"/>
 
                     <Label x:Name="TripErrorLabel"
                            TextColor="{StaticResource ErrorColor}"
@@ -125,6 +128,16 @@
             <!-- Trips List -->
             <CollectionView x:Name="TripsView"
                             Grid.Row="5">
+                <CollectionView.EmptyView>
+                    <Border Padding="18"
+                            Margin="0,8,0,0"
+                            Background="{StaticResource CardColor}"
+                            StrokeShape="RoundRectangle 14">
+                        <Label Text="No trips saved yet. Add a Trip ID and save your current checkpoint."
+                               HorizontalTextAlignment="Center"
+                               TextColor="{StaticResource SecondaryText}"/>
+                    </Border>
+                </CollectionView.EmptyView>
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="models:TripLog">
                         <Border Padding="15"
@@ -150,6 +163,7 @@
                                              HeightRequest="22"
                                              Padding="4"
                                              BackgroundColor="Transparent"
+                                             SemanticProperties.Description="Delete saved trip"
                                              CommandParameter="{Binding .}"
                                              Pressed="DeleteButton_Pressed"
                                              Released="DeleteButton_Released"

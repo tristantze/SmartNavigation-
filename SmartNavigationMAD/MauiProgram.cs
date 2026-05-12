@@ -20,6 +20,7 @@ public static class MauiProgram
         builder.Services.AddSingleton(new TripDatabase(dbPath));
 
         builder.Services.AddSingleton<MainPage>();
+        builder.Services.AddSingleton<AppShell>();
 
         return builder.Build();
     }

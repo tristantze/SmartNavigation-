@@ -1,4 +1,4 @@
-﻿using Microsoft.Maui.Devices.Sensors;
+using Microsoft.Maui.Devices.Sensors;
 using Microsoft.Maui.Networking;
 using SmartNavigationMAD.Data;
 using SmartNavigationMAD.Models;
@@ -8,7 +8,7 @@ namespace SmartNavigationMAD;
 public partial class MainPage : ContentPage
 {
     private readonly TripDatabase _db;
-
+    private Location? _currentLocation;
     private bool _tripIdHelpVisible;
     private bool _savedTripsHelpVisible;
 
@@ -22,102 +22,139 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
 
-        if (DeviceInfo.Platform == DevicePlatform.Android)
+        await _db.InitializeAsync();
+
+        if (await EnsureLocationPermissionAsync())
         {
-            var status = await Permissions.CheckStatusAsync<Permissions.LocationWhenInUse>();
-            if (status != PermissionStatus.Granted)
-                await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+            await LoadLocationAndConnectivity();
+        }
+        else
+        {
+            SetLocationUnavailableState("Location permission is required to track trips");
         }
 
-        await LoadLocationAndConnectivity();
         await LoadTripsAsync();
     }
 
-    // 🔄 Load current trip status
+    private static async Task<bool> EnsureLocationPermissionAsync()
+    {
+        var platform = DeviceInfo.Platform;
+        if (platform != DevicePlatform.Android &&
+            platform != DevicePlatform.iOS &&
+            platform != DevicePlatform.MacCatalyst)
+        {
+            return true;
+        }
+
+        var status = await Permissions.CheckStatusAsync<Permissions.LocationWhenInUse>();
+        if (status == PermissionStatus.Granted)
+        {
+            return true;
+        }
+
+        status = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+        return status == PermissionStatus.Granted;
+    }
+
     private async Task LoadLocationAndConnectivity()
     {
         try
         {
-            var location = await Geolocation.GetLocationAsync(
-                new GeolocationRequest(GeolocationAccuracy.Medium));
+            _currentLocation = await Geolocation.GetLocationAsync(
+                new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(10)));
 
-            if (location != null)
+            if (_currentLocation == null)
             {
-                LatitudeLabel.Text = location.Latitude.ToString("F6");
-                LongitudeLabel.Text = location.Longitude.ToString("F6");
+                SetLocationUnavailableState("Current location is unavailable");
+                return;
             }
 
+            LatitudeLabel.Text = _currentLocation.Latitude.ToString("F6");
+            LongitudeLabel.Text = _currentLocation.Longitude.ToString("F6");
             NetworkLabel.Text = Connectivity.Current.NetworkAccess.ToString();
             TimeLabel.Text = DateTime.Now.ToString("dd MMM yyyy HH:mm:ss");
             StatusLabel.Text = "Live trip tracking active";
         }
         catch
         {
-            StatusLabel.Text = "Unable to retrieve location";
+            SetLocationUnavailableState("Unable to retrieve location");
         }
     }
 
-    // 💾 Save trip
     private async void SaveTrip_Clicked(object sender, EventArgs e)
     {
-        if (!ValidateTripId(TripEntry.Text))
+        if (!ValidateTripId(TripEntry.Text, out var normalizedTripId))
+        {
             return;
+        }
+
+        if (_currentLocation == null)
+        {
+            TripErrorLabel.Text = "Refresh until a location is available before saving";
+            TripErrorLabel.IsVisible = true;
+            return;
+        }
 
         await _db.SaveTripAsync(new TripLog
         {
-            TripId = TripEntry.Text!,
-            Location = $"{LatitudeLabel.Text}, {LongitudeLabel.Text}"
+            TripId = normalizedTripId,
+            Location = $"{_currentLocation.Latitude:F6}, {_currentLocation.Longitude:F6}"
         });
 
-        TripEntry.Text = "";
+        TripEntry.Text = string.Empty;
         TripErrorLabel.IsVisible = false;
 
         await LoadTripsAsync();
         StatusLabel.Text = "Trip saved";
     }
 
-    // 💾 Save button press feedback
     private async void SaveButton_Pressed(object sender, EventArgs e)
     {
         if (sender is Button btn)
+        {
             await btn.ScaleTo(0.96, 80, Easing.CubicOut);
+        }
     }
 
     private async void SaveButton_Released(object sender, EventArgs e)
     {
         if (sender is Button btn)
+        {
             await btn.ScaleTo(1, 80, Easing.CubicIn);
+        }
     }
 
-    // 🗑️ Delete trip with animation
     private async void DeleteTrip_Clicked(object sender, EventArgs e)
     {
         if (sender is ImageButton btn && btn.CommandParameter is TripLog trip)
         {
             if (btn.Parent?.Parent is Border border)
+            {
                 await border.TranslateTo(120, 0, 200, Easing.CubicIn);
+            }
 
             await _db.DeleteTripAsync(trip);
             await LoadTripsAsync();
-
             StatusLabel.Text = "Trip deleted";
         }
     }
 
-    // 🗑️ Delete button press feedback
     private async void DeleteButton_Pressed(object sender, EventArgs e)
     {
         if (sender is ImageButton btn)
+        {
             await btn.ScaleTo(0.85, 80, Easing.CubicOut);
+        }
     }
 
     private async void DeleteButton_Released(object sender, EventArgs e)
     {
         if (sender is ImageButton btn)
+        {
             await btn.ScaleTo(1, 80, Easing.CubicIn);
+        }
     }
 
-    // ✨ Item appear animation
     private async void TripItem_Loaded(object sender, EventArgs e)
     {
         if (sender is Border border)
@@ -127,43 +164,57 @@ public partial class MainPage : ContentPage
         }
     }
 
-    // 🔄 Pull-to-refresh
     private async void OnRefreshRequested(object sender, EventArgs e)
     {
-        await LoadLocationAndConnectivity();
+        if (await EnsureLocationPermissionAsync())
+        {
+            await LoadLocationAndConnectivity();
+        }
+        else
+        {
+            SetLocationUnavailableState("Location permission is required to track trips");
+        }
+
         await LoadTripsAsync();
         PageRefreshView.IsRefreshing = false;
     }
 
-    // ✅ Validation
-    private bool ValidateTripId(string? tripId)
+    private bool ValidateTripId(string? tripId, out string normalizedTripId)
     {
+        normalizedTripId = string.Empty;
         TripErrorLabel.IsVisible = false;
 
-        if (string.IsNullOrWhiteSpace(tripId))
+        var candidate = tripId?.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(candidate))
         {
             TripErrorLabel.Text = "Trip ID cannot be empty";
             TripErrorLabel.IsVisible = true;
             return false;
         }
 
-        if (tripId.Length < 3 || !tripId.All(char.IsLetterOrDigit))
+        if (candidate.Length is < 3 or > 20)
         {
-            TripErrorLabel.Text = "Trip ID must be alphanumeric";
+            TripErrorLabel.Text = "Trip ID must be 3 to 20 characters";
             TripErrorLabel.IsVisible = true;
             return false;
         }
 
+        if (!candidate.All(char.IsLetterOrDigit))
+        {
+            TripErrorLabel.Text = "Trip ID must use letters and numbers only";
+            TripErrorLabel.IsVisible = true;
+            return false;
+        }
+
+        normalizedTripId = candidate;
         return true;
     }
 
-    // 📋 Load trips
     private async Task LoadTripsAsync()
     {
         TripsView.ItemsSource = await _db.GetTripsAsync();
     }
 
-    // ℹ️ Expand / collapse help sections
     private async void ToggleTripIdHelp(object sender, EventArgs e)
     {
         _tripIdHelpVisible = !_tripIdHelpVisible;
@@ -196,5 +247,15 @@ public partial class MainPage : ContentPage
             await SavedTripsHelp.FadeTo(0, 120);
             SavedTripsHelp.IsVisible = false;
         }
+    }
+
+    private void SetLocationUnavailableState(string message)
+    {
+        _currentLocation = null;
+        LatitudeLabel.Text = "--";
+        LongitudeLabel.Text = "--";
+        NetworkLabel.Text = Connectivity.Current.NetworkAccess.ToString();
+        TimeLabel.Text = "--";
+        StatusLabel.Text = message;
     }
 }

@@ -1,10 +1,16 @@
-﻿namespace SmartNavigationMAD
+namespace SmartNavigationMAD;
+
+public partial class AppShell : Shell
 {
-    public partial class AppShell : Shell
+    public AppShell(MainPage mainPage)
     {
-        public AppShell()
+        InitializeComponent();
+
+        Items.Add(new ShellContent
         {
-            InitializeComponent();
-        }
+            Title = "Home",
+            Route = "MainPage",
+            Content = mainPage
+        });
     }
 }

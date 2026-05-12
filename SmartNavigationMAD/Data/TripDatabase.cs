@@ -1,4 +1,4 @@
-﻿using SQLite;
+using SQLite;
 using SmartNavigationMAD.Models;
 
 namespace SmartNavigationMAD.Data;
@@ -6,28 +6,41 @@ namespace SmartNavigationMAD.Data;
 public class TripDatabase
 {
     private readonly SQLiteAsyncConnection _database;
+    private bool _isInitialized;
 
     public TripDatabase(string dbPath)
     {
         _database = new SQLiteAsyncConnection(dbPath);
-        _database.CreateTableAsync<TripLog>().Wait();
     }
 
-    public Task<int> SaveTripAsync(TripLog trip)
+    public async Task InitializeAsync()
     {
-        return _database.InsertAsync(trip);
+        if (_isInitialized)
+        {
+            return;
+        }
+
+        await _database.CreateTableAsync<TripLog>();
+        _isInitialized = true;
     }
 
-    public Task<List<TripLog>> GetTripsAsync()
+    public async Task<int> SaveTripAsync(TripLog trip)
     {
-        return _database.Table<TripLog>()
-                        .OrderByDescending(t => t.Id)
-                        .ToListAsync();
+        await InitializeAsync();
+        return await _database.InsertAsync(trip);
     }
 
-    // NEW: Delete a trip
-    public Task<int> DeleteTripAsync(TripLog trip)
+    public async Task<List<TripLog>> GetTripsAsync()
     {
-        return _database.DeleteAsync(trip);
+        await InitializeAsync();
+        return await _database.Table<TripLog>()
+                              .OrderByDescending(t => t.Id)
+                              .ToListAsync();
+    }
+
+    public async Task<int> DeleteTripAsync(TripLog trip)
+    {
+        await InitializeAsync();
+        return await _database.DeleteAsync(trip);
     }
 }
